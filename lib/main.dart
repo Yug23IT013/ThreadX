@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'screens/login/login_screen.dart';
 import 'config/theme.dart';
 
 void main() {
@@ -11,10 +12,10 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      theme: AppTheme.lightTheme,
-      home: const Scaffold(
-        body: Center(child: Text('ThreadX App')),
-      ),
+      title: 'ThreadX',
+      theme: AppTheme.darkTheme,
+      debugShowCheckedModeBanner: false,
+      home: const LoginScreen(),
     );
   }
 }
