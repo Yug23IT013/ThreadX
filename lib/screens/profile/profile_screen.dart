@@ -1,12 +1,57 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../config/theme.dart';
+import '../../services/auth_service.dart';
+import '../../services/session_manager.dart';
+import '../login/login_screen.dart';
 import 'settings_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
+  Future<void> _handleLogout(BuildContext context) async {
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      // Perform logout
+      final authService = Provider.of<AuthService>(context, listen: false);
+      await authService.signOut();
+      await SessionManager.clearSession();
+
+      // Navigate to login screen
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        (route) => false,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final authService = Provider.of<AuthService>(context);
+    final user = authService.user;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Profile"),
@@ -39,12 +84,20 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  "u/username",
-                  style: TextStyle(
+                Text(
+                  user?.displayName ?? "u/username",
+                  style: const TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  user?.email ?? "",
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 14,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -101,6 +154,13 @@ class ProfileScreen extends StatelessWidget {
             title: "History",
             onTap: () {},
           ),
+          const Divider(height: 1, color: AppTheme.dividerColor),
+          _buildMenuItem(
+            icon: Icons.logout,
+            title: "Logout",
+            onTap: () => _handleLogout(context),
+            isDestructive: true,
+          ),
         ],
       ),
     );
@@ -133,6 +193,7 @@ class ProfileScreen extends StatelessWidget {
     required IconData icon,
     required String title,
     required VoidCallback onTap,
+    bool isDestructive = false,
   }) {
     return InkWell(
       onTap: onTap,
@@ -141,19 +202,22 @@ class ProfileScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Row(
           children: [
-            Icon(icon, color: AppTheme.textSecondary),
+            Icon(
+              icon,
+              color: isDestructive ? Colors.red : AppTheme.textSecondary,
+            ),
             const SizedBox(width: 16),
             Text(
               title,
-              style: const TextStyle(
-                color: AppTheme.textPrimary,
+              style: TextStyle(
+                color: isDestructive ? Colors.red : AppTheme.textPrimary,
                 fontSize: 16,
               ),
             ),
             const Spacer(),
-            const Icon(
+            Icon(
               Icons.arrow_forward_ios,
-              color: AppTheme.textSecondary,
+              color: isDestructive ? Colors.red : AppTheme.textSecondary,
               size: 16,
             ),
           ],
