@@ -1,21 +1,85 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../config/theme.dart';
+import '../../models/thread_model.dart';
+import '../../models/comment_model.dart';
+import '../../services/comment_service.dart';
+import '../../services/thread_service.dart';
+import '../../services/vote_service.dart';
 
-class ThreadDetailScreen extends StatelessWidget {
-  final String title;
-  final String author;
-  final String time;
-  final int votes;
-  final int comments;
+class ThreadDetailScreen extends StatefulWidget {
+  final String threadId;
+  final ThreadModel thread;
 
   const ThreadDetailScreen({
     super.key,
-    required this.title,
-    required this.author,
-    required this.time,
-    required this.votes,
-    required this.comments,
+    required this.threadId,
+    required this.thread,
   });
+
+  @override
+  State<ThreadDetailScreen> createState() => _ThreadDetailScreenState();
+}
+
+class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
+  final CommentService _commentService = CommentService();
+  final ThreadService _threadService = ThreadService();
+  final VoteService _voteService = VoteService();
+  final TextEditingController _commentController = TextEditingController();
+  final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _postComment() async {
+    if (_commentController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a comment')),
+      );
+      return;
+    }
+
+    if (currentUserId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please log in to comment')),
+      );
+      return;
+    }
+
+    try {
+      final comment = CommentModel(
+        content: _commentController.text.trim(),
+        authorId: currentUserId!,
+        threadId: widget.threadId,
+        createdAt: DateTime.now(),
+      );
+
+      await _commentService.createComment(comment);
+      await _threadService.incrementCommentCount(widget.threadId);
+      
+      _commentController.clear();
+      FocusScope.of(context).unfocus();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Comment posted!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error posting comment: $e')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +117,7 @@ class ThreadDetailScreen extends StatelessWidget {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            author,
+                            widget.thread.authorId,
                             style: const TextStyle(
                               color: AppTheme.textPrimary,
                               fontWeight: FontWeight.w500,
@@ -61,7 +125,7 @@ class ThreadDetailScreen extends StatelessWidget {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            time,
+                            _getTimeAgo(widget.thread.createdAt),
                             style: const TextStyle(
                               color: AppTheme.textSecondary,
                               fontSize: 12,
@@ -71,7 +135,7 @@ class ThreadDetailScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        title,
+                        widget.thread.title,
                         style: const TextStyle(
                           color: AppTheme.textPrimary,
                           fontSize: 18,
@@ -79,8 +143,10 @@ class ThreadDetailScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      const Text(
-                        "This is the thread content where users can share their thoughts, questions, and discussions about various topics. The content can be as detailed as needed.",
+                      Text(
+                        widget.thread.content.isEmpty 
+                          ? "No content provided."
+                          : widget.thread.content,
                         style: TextStyle(
                           color: AppTheme.textPrimary,
                           fontSize: 15,
@@ -96,7 +162,7 @@ class ThreadDetailScreen extends StatelessWidget {
                             color: AppTheme.textSecondary,
                           ),
                           Text(
-                            votes.toString(),
+                            "${widget.thread.votes}",
                             style: const TextStyle(
                               color: AppTheme.textPrimary,
                               fontWeight: FontWeight.bold,
@@ -115,7 +181,7 @@ class ThreadDetailScreen extends StatelessWidget {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            "$comments",
+                            "${widget.thread.commentCount}",
                             style: const TextStyle(
                               color: AppTheme.textSecondary,
                             ),
@@ -130,7 +196,7 @@ class ThreadDetailScreen extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.all(12),
                   child: Text(
-                    "$comments Comments",
+                    "${widget.thread.commentCount} Comments",
                     style: const TextStyle(
                       color: AppTheme.textSecondary,
                       fontSize: 12,
@@ -138,25 +204,54 @@ class ThreadDetailScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                _buildComment(
-                  author: "u/dev_enthusiast",
-                  time: "1h ago",
-                  content: "Great question! I'd recommend starting with the official Flutter documentation and building small projects.",
-                  votes: 45,
-                ),
-                const Divider(height: 1, color: AppTheme.dividerColor),
-                _buildComment(
-                  author: "u/flutter_pro",
-                  time: "3h ago",
-                  content: "Don't forget to check out the Flutter widget catalog. It's incredibly helpful for understanding layouts.",
-                  votes: 23,
-                ),
-                const Divider(height: 1, color: AppTheme.dividerColor),
-                _buildComment(
-                  author: "u/code_ninja",
-                  time: "5h ago",
-                  content: "I've been using Flutter for 2 years now. Happy to answer any specific questions!",
-                  votes: 18,
+                // Real-time Comments Section
+                StreamBuilder<List<CommentModel>>(
+                  stream: _commentService.getCommentsByThread(widget.threadId),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Padding(
+                        padding: EdgeInsets.all(20),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.comment_outlined,
+                                size: 48,
+                                color: AppTheme.textSecondary.withOpacity(0.5),
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'No comments yet. Be the first!',
+                                style: TextStyle(
+                                  color: AppTheme.textSecondary,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
+                    final comments = snapshot.data!;
+                    return Column(
+                      children: comments.map((comment) {
+                        return Column(
+                          children: [
+                            _buildComment(comment),
+                            const Divider(height: 1, color: AppTheme.dividerColor),
+                          ],
+                        );
+                      }).toList(),
+                    );
+                  },
                 ),
               ],
             ),
@@ -179,6 +274,7 @@ class ThreadDetailScreen extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: TextField(
+                    controller: _commentController,
                     decoration: InputDecoration(
                       hintText: "Add a comment...",
                       border: OutlineInputBorder(
@@ -195,7 +291,7 @@ class ThreadDetailScreen extends StatelessWidget {
                 const SizedBox(width: 8),
                 IconButton(
                   icon: const Icon(Icons.send),
-                  onPressed: () {},
+                  onPressed: _postComment,
                   color: AppTheme.accentWhite,
                 ),
               ],
@@ -206,7 +302,176 @@ class ThreadDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildComment({
+  Widget _buildComment(CommentModel comment) {
+    final isAuthor = currentUserId == comment.authorId;
+    return Container(
+      color: AppTheme.cardBackground,
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const CircleAvatar(
+            radius: 12,
+            backgroundColor: AppTheme.accentWhite,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      comment.authorId,
+                      style: const TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _getTimeAgo(comment.createdAt),
+                      style: const TextStyle(
+                        color: AppTheme.textSecondary,
+                        fontSize: 11,
+                      ),
+                    ),
+                    if (isAuthor) ...[
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.person,
+                        size: 12,
+                        color: AppTheme.accentBlue,
+                      ),
+                    ],
+                    const Spacer(),
+                    if (isAuthor) ...[
+                      IconButton(
+                        icon: const Icon(Icons.edit, size: 16),
+                        onPressed: () => _editComment(comment),
+                        color: AppTheme.accentBlue,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.delete, size: 16),
+                        onPressed: () => _deleteComment(comment),
+                        color: Colors.red,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  comment.content,
+                  style: const TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _editComment(CommentModel comment) async {
+    final controller = TextEditingController(text: comment.content);
+    
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.cardBackground,
+        title: const Text('Edit Comment', style: TextStyle(color: AppTheme.textPrimary)),
+        content: TextField(
+          controller: controller,
+          maxLines: 5,
+          style: const TextStyle(color: AppTheme.textPrimary),
+          decoration: const InputDecoration(
+            hintText: 'Edit your comment...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true && controller.text.trim().isNotEmpty) {
+      try {
+        await _commentService.updateComment(comment.id!, controller.text.trim());
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Comment updated!'), backgroundColor: Colors.green),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _deleteComment(CommentModel comment) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.cardBackground,
+        title: const Text('Delete Comment', style: TextStyle(color: AppTheme.textPrimary)),
+        content: const Text(
+          'Are you sure you want to delete this comment?',
+          style: TextStyle(color: AppTheme.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await _commentService.deleteComment(comment.id!);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Comment deleted!'), backgroundColor: Colors.green),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+  }
+
+  Widget _buildComment_old({
     required String author,
     required String time,
     required String content,
@@ -309,5 +574,24 @@ class ThreadDetailScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _getTimeAgo(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inDays > 365) {
+      return '${(difference.inDays / 365).floor()}y ago';
+    } else if (difference.inDays > 30) {
+      return '${(difference.inDays / 30).floor()}mo ago';
+    } else if (difference.inDays > 0) {
+      return '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m ago';
+    } else {
+      return 'Just now';
+    }
   }
 }

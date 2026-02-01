@@ -4,18 +4,27 @@ import '../../config/theme.dart';
 import '../../services/thread_service.dart';
 import '../../models/thread_model.dart';
 
-class CreateThreadScreen extends StatefulWidget {
-  const CreateThreadScreen({super.key});
+class EditThreadScreen extends StatefulWidget {
+  final ThreadModel thread;
+
+  const EditThreadScreen({super.key, required this.thread});
 
   @override
-  State<CreateThreadScreen> createState() => _CreateThreadScreenState();
+  State<EditThreadScreen> createState() => _EditThreadScreenState();
 }
 
-class _CreateThreadScreenState extends State<CreateThreadScreen> {
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _contentController = TextEditingController();
+class _EditThreadScreenState extends State<EditThreadScreen> {
+  late TextEditingController _titleController;
+  late TextEditingController _contentController;
   final ThreadService _threadService = ThreadService();
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.thread.title);
+    _contentController = TextEditingController(text: widget.thread.content);
+  }
 
   @override
   void dispose() {
@@ -24,7 +33,7 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
     super.dispose();
   }
 
-  Future<void> _createThread() async {
+  Future<void> _updateThread() async {
     if (_titleController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -38,24 +47,16 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser == null) {
-        throw Exception('User not logged in');
-      }
-
-      final thread = ThreadModel(
-        title: _titleController.text.trim(),
-        content: _contentController.text.trim(),
-        authorId: currentUser.uid,
-        createdAt: DateTime.now(),
+      await _threadService.updateThreadContent(
+        widget.thread.id!,
+        _titleController.text.trim(),
+        _contentController.text.trim(),
       );
-
-      await _threadService.createThread(thread);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Thread created successfully!'),
+            content: Text('Thread updated successfully!'),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
           ),
@@ -66,7 +67,7 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error creating thread: $e'),
+            content: Text('Error updating thread: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -82,7 +83,7 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Create Post"),
+        title: const Text("Edit Post"),
         actions: [
           _isLoading
               ? const Center(
@@ -99,9 +100,9 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
                   ),
                 )
               : TextButton(
-                  onPressed: _createThread,
+                  onPressed: _updateThread,
                   child: const Text(
-                    "POST",
+                    "SAVE",
                     style: TextStyle(
                       color: AppTheme.accentWhite,
                       fontWeight: FontWeight.bold,
@@ -130,7 +131,7 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      "Posting as ${FirebaseAuth.instance.currentUser?.email ?? 'user'}",
+                      "Editing as ${FirebaseAuth.instance.currentUser?.email ?? 'user'}",
                       style: const TextStyle(
                         color: AppTheme.textPrimary,
                         fontSize: 14,
@@ -175,23 +176,27 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
                 decoration: BoxDecoration(
                   color: AppTheme.cardBackground,
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: AppTheme.accentBlue.withOpacity(0.3),
+                    width: 1,
+                  ),
                 ),
                 child: Row(
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.image_outlined),
-                      onPressed: () {},
-                      color: AppTheme.textSecondary,
+                    const Icon(
+                      Icons.info_outline,
+                      color: AppTheme.accentBlue,
+                      size: 20,
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.link),
-                      onPressed: () {},
-                      color: AppTheme.textSecondary,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.poll_outlined),
-                      onPressed: () {},
-                      color: AppTheme.textSecondary,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        "Editing your post. Changes will be visible immediately.",
+                        style: TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 13,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -203,5 +208,3 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
     );
   }
 }
-
-

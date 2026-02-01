@@ -5,6 +5,8 @@ import '../../services/auth_service.dart';
 import '../../services/session_manager.dart';
 import '../login/login_screen.dart';
 import 'settings_screen.dart';
+import 'my_posts_screen.dart';
+import 'my_comments_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -134,13 +136,23 @@ class ProfileScreen extends StatelessWidget {
           _buildMenuItem(
             icon: Icons.article_outlined,
             title: "My Posts",
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const MyPostsScreen()),
+              );
+            },
           ),
           const Divider(height: 1, color: AppTheme.dividerColor),
           _buildMenuItem(
             icon: Icons.comment_outlined,
             title: "My Comments",
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const MyCommentsScreen()),
+              );
+            },
           ),
           const Divider(height: 1, color: AppTheme.dividerColor),
           _buildMenuItem(

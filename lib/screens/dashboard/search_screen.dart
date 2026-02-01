@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../config/theme.dart';
+import '../../models/thread_model.dart';
 import 'thread_detail_screen.dart';
 
 class SearchScreen extends StatelessWidget {
@@ -72,15 +73,20 @@ class SearchScreen extends StatelessWidget {
   }) {
     return InkWell(
       onTap: () {
+        // Create a mock thread for search results
+        final mockThread = ThreadModel(
+          title: title,
+          content: '',
+          authorId: 'search_user',
+          createdAt: DateTime.now().subtract(const Duration(days: 1)),
+          votes: votes,
+        );
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => ThreadDetailScreen(
-              title: title,
-              author: "u/searcher",
-              time: "1d ago",
-              votes: votes,
-              comments: 45,
+              threadId: 'search_result',
+              thread: mockThread,
             ),
           ),
         );
