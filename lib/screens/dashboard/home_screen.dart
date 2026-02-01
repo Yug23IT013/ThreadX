@@ -4,6 +4,8 @@ import '../../config/theme.dart';
 import '../../services/thread_service.dart';
 import '../../services/vote_service.dart';
 import '../../models/thread_model.dart';
+import '../../widgets/app_drawer.dart';
+import '../../widgets/thread_card.dart';
 import 'search_screen.dart';
 import 'create_thread_screen.dart';
 import 'thread_detail_screen.dart';
@@ -48,6 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+      drawer: const AppDrawer(),
       body: StreamBuilder<List<ThreadModel>>(
         stream: _threadService.getAllThreads(),
         builder: (context, snapshot) {
@@ -82,13 +85,29 @@ class _HomeScreenState extends State<HomeScreen> {
             onRefresh: () async {
               setState(() {});
             },
-            child: ListView.separated(
+            child: ListView.builder(
               itemCount: threads.length,
-              separatorBuilder: (context, index) =>
-                  const Divider(height: 1, color: AppTheme.dividerColor),
+              padding: const EdgeInsets.symmetric(vertical: 8),
               itemBuilder: (context, index) {
                 final thread = threads[index];
-                return _buildPostCard(context, thread);
+                return ThreadCard(
+                  thread: thread,
+                  currentUserId: currentUserId,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ThreadDetailScreen(
+                          threadId: thread.id!,
+                          thread: thread,
+                        ),
+                      ),
+                    );
+                  },
+                  onLongPress: currentUserId == thread.authorId
+                      ? () => _showThreadOptions(context, thread)
+                      : null,
+                );
               },
             ),
           );
@@ -105,175 +124,6 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         },
         child: const Icon(Icons.add),
-      ),
-    );
-  }
-
-  Widget _buildPostCard(BuildContext context, ThreadModel thread) {
-    final isAuthor = currentUserId == thread.authorId;
-    final timeAgo = _getTimeAgo(thread.createdAt);
-
-    return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ThreadDetailScreen(
-              threadId: thread.id!,
-              thread: thread,
-            ),
-          ),
-        );
-      },
-      onLongPress: isAuthor
-          ? () => _showThreadOptions(context, thread)
-          : null,
-      child: Container(
-        color: AppTheme.cardBackground,
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Vote section with one-vote tracking
-            StreamBuilder<String?>(
-              stream: _voteService.getVoteStream(thread.id!, currentUserId ?? ''),
-              builder: (context, voteSnapshot) {
-                final userVote = voteSnapshot.data;
-                return Column(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_upward, size: 20),
-                      onPressed: currentUserId != null
-                          ? () => _voteService.voteThread(thread.id!, currentUserId!, 'upvote')
-                          : null,
-                      color: userVote == 'upvote' ? Colors.orange : AppTheme.textSecondary,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                    Text(
-                      thread.votes.toString(),
-                      style: TextStyle(
-                        color: userVote == 'upvote' 
-                            ? Colors.orange 
-                            : userVote == 'downvote'
-                            ? Colors.blue
-                            : AppTheme.textPrimary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.arrow_downward, size: 20),
-                      onPressed: currentUserId != null
-                          ? () => _voteService.voteThread(thread.id!, currentUserId!, 'downvote')
-                          : null,
-                      color: userVote == 'downvote' ? Colors.blue : AppTheme.textSecondary,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                    ),
-                  ],
-                );
-              },
-            ),
-            const SizedBox(width: 12),
-            // Content section
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const CircleAvatar(
-                        radius: 8,
-                        backgroundColor: AppTheme.accentWhite,
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          thread.authorId,
-                          style: const TextStyle(
-                            color: AppTheme.textSecondary,
-                            fontSize: 12,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        timeAgo,
-                        style: const TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 12,
-                        ),
-                      ),
-                      if (isAuthor) ...[
-                        const SizedBox(width: 8),
-                        const Icon(
-                          Icons.person,
-                          size: 14,
-                          color: AppTheme.accentBlue,
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    thread.title,
-                    style: const TextStyle(
-                      color: AppTheme.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (thread.content.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      thread.content,
-                      style: const TextStyle(
-                        color: AppTheme.textSecondary,
-                        fontSize: 14,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.comment_outlined,
-                        size: 18,
-                        color: AppTheme.textSecondary,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        "${thread.commentCount} comments",
-                        style: const TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(width: 20),
-                      const Icon(
-                        Icons.share_outlined,
-                        size: 18,
-                        color: AppTheme.textSecondary,
-                      ),
-                      const SizedBox(width: 6),
-                      const Text(
-                        "Share",
-                        style: TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -354,25 +204,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
-  }
-
-  String _getTimeAgo(DateTime dateTime) {
-    final now = DateTime.now();
-    final difference = now.difference(dateTime);
-
-    if (difference.inDays > 365) {
-      return '${(difference.inDays / 365).floor()}y ago';
-    } else if (difference.inDays > 30) {
-      return '${(difference.inDays / 30).floor()}mo ago';
-    } else if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}m ago';
-    } else {
-      return 'Just now';
-    }
   }
 }
 

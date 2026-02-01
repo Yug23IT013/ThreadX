@@ -313,6 +313,7 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
           const CircleAvatar(
             radius: 12,
             backgroundColor: AppTheme.accentWhite,
+            child: Icon(Icons.person, size: 14, color: AppTheme.darkBackground),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -321,12 +322,15 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
               children: [
                 Row(
                   children: [
-                    Text(
-                      comment.authorId,
-                      style: const TextStyle(
-                        color: AppTheme.textPrimary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
+                    Flexible(
+                      child: Text(
+                        comment.authorId,
+                        style: const TextStyle(
+                          color: AppTheme.textPrimary,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -338,39 +342,84 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
                       ),
                     ),
                     if (isAuthor) ...[
-                      const SizedBox(width: 8),
-                      const Icon(
-                        Icons.person,
-                        size: 12,
-                        color: AppTheme.accentBlue,
-                      ),
-                    ],
-                    const Spacer(),
-                    if (isAuthor) ...[
-                      IconButton(
-                        icon: const Icon(Icons.edit, size: 16),
-                        onPressed: () => _editComment(comment),
-                        color: AppTheme.accentBlue,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: const Icon(Icons.delete, size: 16),
-                        onPressed: () => _deleteComment(comment),
-                        color: Colors.red,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
+                      const SizedBox(width: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentBlue.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'YOU',
+                          style: TextStyle(
+                            color: AppTheme.accentBlue,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ],
                   ],
                 ),
+                if (isAuthor) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      InkWell(
+                        onTap: () => _editComment(comment),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.edit, size: 14, color: AppTheme.accentBlue),
+                              SizedBox(width: 4),
+                              Text(
+                                'Edit',
+                                style: TextStyle(
+                                  color: AppTheme.accentBlue,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      InkWell(
+                        onTap: () => _deleteComment(comment),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.delete, size: 14, color: Colors.red),
+                              SizedBox(width: 4),
+                              Text(
+                                'Delete',
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 6),
                 Text(
                   comment.content,
                   style: const TextStyle(
                     color: AppTheme.textPrimary,
                     fontSize: 14,
+                    height: 1.4,
                   ),
                 ),
               ],
@@ -469,111 +518,6 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
         }
       }
     }
-  }
-
-  Widget _buildComment_old({
-    required String author,
-    required String time,
-    required String content,
-    required int votes,
-  }) {
-    return Container(
-      color: AppTheme.cardBackground,
-      padding: const EdgeInsets.all(12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Column(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.arrow_upward, size: 18),
-                onPressed: () {},
-                color: AppTheme.textSecondary,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-              Text(
-                votes.toString(),
-                style: const TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.arrow_downward, size: 18),
-                onPressed: () {},
-                color: AppTheme.textSecondary,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-            ],
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      author,
-                      style: const TextStyle(
-                        color: AppTheme.textPrimary,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      time,
-                      style: const TextStyle(
-                        color: AppTheme.textSecondary,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  content,
-                  style: const TextStyle(
-                    color: AppTheme.textPrimary,
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    TextButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(
-                        Icons.reply,
-                        size: 16,
-                        color: AppTheme.textSecondary,
-                      ),
-                      label: const Text(
-                        "Reply",
-                        style: TextStyle(
-                          color: AppTheme.textSecondary,
-                          fontSize: 12,
-                        ),
-                      ),
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        minimumSize: const Size(0, 0),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   String _getTimeAgo(DateTime dateTime) {
