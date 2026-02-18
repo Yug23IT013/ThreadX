@@ -1,8 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 class AuthService extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   User? _user;
   String? _errorMessage;
   bool _isLoading = false;
@@ -47,6 +49,24 @@ class AuthService extends ChangeNotifier {
       await userCredential.user?.reload();
       _user = _auth.currentUser;
 
+      // Save user data to Firestore
+      if (_user != null) {
+        try {
+          await _firestore.collection('users').doc(_user!.uid).set({
+            'email': email,
+            'displayName': username,
+            'createdAt': FieldValue.serverTimestamp(),
+            'isAdmin': false, // New users are not admin by default
+            'threadCount': 0,
+            'commentCount': 0,
+          });
+          print('✅ User document created successfully for ${_user!.uid}');
+        } catch (firestoreError) {
+          print('❌ Error creating user document: $firestoreError');
+          // Continue even if Firestore fails - user is still authenticated
+        }
+      }
+
       _isLoading = false;
       notifyListeners();
       return true;
@@ -57,7 +77,8 @@ class AuthService extends ChangeNotifier {
       return false;
     } catch (e) {
       _isLoading = false;
-      _errorMessage = 'An unexpected error occurred';
+      _errorMessage = 'An unexpected error occurred: $e';
+      print('❌ Registration error: $e');
       notifyListeners();
       return false;
     }
@@ -79,6 +100,31 @@ class AuthService extends ChangeNotifier {
       );
 
       _user = _auth.currentUser;
+
+      // Ensure user document exists in Firestore
+      if (_user != null) {
+        try {
+          final userDoc = await _firestore.collection('users').doc(_user!.uid).get();
+          if (!userDoc.exists) {
+            // Create user document if it doesn't exist (for existing accounts)
+            await _firestore.collection('users').doc(_user!.uid).set({
+              'email': _user!.email ?? email,
+              'displayName': _user!.displayName ?? email.split('@')[0],
+              'createdAt': FieldValue.serverTimestamp(),
+              'isAdmin': false,
+              'threadCount': 0,
+              'commentCount': 0,
+            });
+            print('✅ User document created for existing user ${_user!.uid}');
+          } else {
+            print('✅ User document already exists for ${_user!.uid}');
+          }
+        } catch (firestoreError) {
+          print('❌ Error checking/creating user document: $firestoreError');
+          // Continue even if Firestore fails - user is still authenticated
+        }
+      }
+
       _isLoading = false;
       notifyListeners();
       return true;

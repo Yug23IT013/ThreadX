@@ -54,7 +54,7 @@ class SettingsScreen extends StatelessWidget {
             trailing: Switch(
               value: true,
               onChanged: (value) {},
-              activeColor: AppTheme.accentWhite,
+              activeThumbColor: AppTheme.accentWhite,
             ),
           ),
           const Divider(height: 1, color: AppTheme.dividerColor),
@@ -65,7 +65,7 @@ class SettingsScreen extends StatelessWidget {
             trailing: Switch(
               value: true,
               onChanged: (value) {},
-              activeColor: AppTheme.accentWhite,
+              activeThumbColor: AppTheme.accentWhite,
             ),
           ),
           const Divider(height: 1, color: AppTheme.dividerColor),

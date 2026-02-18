@@ -160,7 +160,7 @@ class ThreadService {
           .collection(_collectionName)
           .orderBy('title')
           .startAt([query])
-          .endAt([query + '\uf8ff'])
+          .endAt(['$query\uf8ff'])
           .get();
 
       return snapshot.docs.map((doc) => ThreadModel.fromFirestore(doc)).toList();

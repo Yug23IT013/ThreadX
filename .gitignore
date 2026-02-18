@@ -12,6 +12,12 @@
 .swiftpm/
 migrate_working_dir/
 
+# Temporary files
+*.tmp
+*.temp
+*~
+.~*
+
 # IntelliJ related
 *.iml
 *.ipr
@@ -27,7 +33,9 @@ migrate_working_dir/
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
+.flutter-plugins
 .flutter-plugins-dependencies
+.packages
 .pub-cache/
 .pub/
 /build/
@@ -44,8 +52,61 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# Firebase sensitive files - DO NOT COMMIT
+# Build directories
+build/
+.dart_tool/
+.packages
+*.lock
+
+# Generated files
+*.g.dart
+*.freezed.dart
+*.gr.dart
+*.config.dart
+*.mocks.dart
+
+# Firebase sensitive files - DO NOT COMMIT TO PUBLIC REPOS
+# Note: For educational/private repos, you may want to include firebase_options.dart
+# Remove the line below if you want to track Firebase config
 lib/firebase_options.dart
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 ios/firebase_app_id_file.json
+.firebase/
+.firebaserc
+firebase-debug.log
+firestore-debug.log
+firebase-debug.*.log
+
+# Local configuration files
+.env
+.env.local
+.env.*.local
+local.properties
+key.properties
+
+# Platform specific
+/android/.gradle
+/android/captures/
+/android/local.properties
+/android/key.properties
+/ios/Flutter/flutter_export_environment.sh
+/ios/Pods/
+/ios/.symlinks/
+/ios/Flutter/.last_build_id
+/macos/Flutter/ephemeral/
+/linux/flutter/ephemeral/
+/windows/flutter/ephemeral/
+
+# Test files (uncomment if you want to ignore test files)
+#test/
+#test_driver/
+#integration_test/
+
+# Documentation backups
+*.md.backup
+*_backup.md
+
+# Temporary test files
+temp_*
+test_*_screen.dart

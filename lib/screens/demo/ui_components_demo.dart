@@ -134,7 +134,7 @@ class _UIComponentsDemoState extends State<UIComponentsDemo> {
               const SizedBox(height: 16),
               // Dropdown
               DropdownButtonFormField<String>(
-                value: _dropdownValue,
+                initialValue: _dropdownValue,
                 decoration: const InputDecoration(
                   labelText: 'Category',
                   prefixIcon: Icon(Icons.category),

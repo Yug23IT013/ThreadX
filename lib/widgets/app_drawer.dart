@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../config/theme.dart';
 import '../services/auth_service.dart';
 import '../services/session_manager.dart';
+import '../services/admin_service.dart';
 import '../screens/dashboard/home_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/profile/settings_screen.dart';
@@ -11,11 +12,38 @@ import '../screens/profile/my_posts_screen.dart';
 import '../screens/profile/my_comments_screen.dart';
 import '../screens/login/login_screen.dart';
 import '../screens/demo/ui_components_demo.dart';
+import '../screens/demo/user_document_test_screen.dart';
+import '../screens/admin/admin_dashboard.dart';
 
 /// Navigation Drawer Widget - Lab 7 Requirement
 /// Implements side navigation menu with user info and navigation options
-class AppDrawer extends StatelessWidget {
+class AppDrawer extends StatefulWidget {
   const AppDrawer({super.key});
+
+  @override
+  State<AppDrawer> createState() => _AppDrawerState();
+}
+
+class _AppDrawerState extends State<AppDrawer> {
+  final AdminService _adminService = AdminService();
+  bool _isAdmin = false;
+  bool _isCheckingAdmin = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAdminStatus();
+  }
+
+  Future<void> _checkAdminStatus() async {
+    final isAdmin = await _adminService.isCurrentUserAdmin();
+    if (mounted) {
+      setState(() {
+        _isAdmin = isAdmin;
+        _isCheckingAdmin = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,24 +55,51 @@ class AppDrawer extends StatelessWidget {
         children: [
           // Drawer Header with User Info
           UserAccountsDrawerHeader(
-            decoration: const BoxDecoration(
-              color: AppTheme.darkBackground,
+            decoration: BoxDecoration(
+              color: _isAdmin ? Colors.red.shade900 : AppTheme.darkBackground,
             ),
             currentAccountPicture: CircleAvatar(
-              backgroundColor: AppTheme.accentWhite,
+              backgroundColor: _isAdmin ? Colors.red : AppTheme.accentWhite,
               child: Icon(
-                Icons.person,
+                _isAdmin ? Icons.admin_panel_settings : Icons.person,
                 size: 40,
-                color: AppTheme.darkBackground,
+                color: Colors.white,
               ),
             ),
-            accountName: Text(
-              user?.displayName ?? 'ThreadX User',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
-              ),
+            accountName: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    user?.displayName ?? 'ThreadX User',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                ),
+                if (_isAdmin) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'ADMIN',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
             accountEmail: Text(
               user?.email ?? '',
@@ -74,6 +129,26 @@ class AppDrawer extends StatelessWidget {
                     );
                   },
                 ),
+                // Admin Dashboard - Only visible to admins
+                if (_isAdmin)
+                  _buildDrawerItem(
+                    context,
+                    icon: Icons.admin_panel_settings,
+                    title: 'Admin Dashboard',
+                    iconColor: Colors.red,
+                    textColor: Colors.red,
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AdminDashboard(),
+                        ),
+                      );
+                    },
+                  ),
+                if (_isAdmin)
+                  const Divider(color: AppTheme.dividerColor),
                 _buildDrawerItem(
                   context,
                   icon: Icons.person_outline,
@@ -127,6 +202,22 @@ class AppDrawer extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) => const UIComponentsDemo(),
+                      ),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  context,
+                  icon: Icons.bug_report,
+                  title: 'Test User Docs',
+                  iconColor: Colors.orange,
+                  textColor: Colors.orange,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const UserDocumentTestScreen(),
                       ),
                     );
                   },
