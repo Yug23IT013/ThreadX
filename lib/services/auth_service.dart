@@ -8,16 +8,23 @@ class AuthService extends ChangeNotifier {
   User? _user;
   String? _errorMessage;
   bool _isLoading = false;
+  bool _isAdmin = false;
 
   User? get user => _user;
   String? get errorMessage => _errorMessage;
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _user != null;
+  bool get isAdmin => _isAdmin;
 
   AuthService() {
     // Listen to auth state changes
-    _auth.authStateChanges().listen((User? user) {
+    _auth.authStateChanges().listen((User? user) async {
       _user = user;
+      if (_user != null) {
+        await checkIsAdmin();
+      } else {
+        _isAdmin = false;
+      }
       notifyListeners();
     });
   }
@@ -25,6 +32,26 @@ class AuthService extends ChangeNotifier {
   // Get current user
   User? getCurrentUser() {
     return _auth.currentUser;
+  }
+
+  // Check if current user is admin
+  Future<void> checkIsAdmin() async {
+    try {
+      if (_user == null) {
+        _isAdmin = false;
+        return;
+      }
+
+      final userDoc = await _firestore.collection('users').doc(_user!.uid).get();
+      if (userDoc.exists) {
+        _isAdmin = userDoc.data()?['isAdmin'] ?? false;
+      } else {
+        _isAdmin = false;
+      }
+    } catch (e) {
+      print('❌ Error checking admin status: $e');
+      _isAdmin = false;
+    }
   }
 
   // Register with email and password
