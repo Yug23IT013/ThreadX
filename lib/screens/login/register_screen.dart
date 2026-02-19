@@ -166,6 +166,92 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   const SizedBox(height: 24),
 
                   Row(
+                    children: [
+                      Expanded(
+                        child: Divider(color: AppTheme.dividerColor, thickness: 1),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          "OR",
+                          style: TextStyle(color: AppTheme.textSecondary),
+                        ),
+                      ),
+                      Expanded(
+                        child: Divider(color: AppTheme.dividerColor, thickness: 1),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Google Sign-In Button
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final authService = Provider.of<AuthService>(context, listen: false);
+                      final success = await authService.signInWithGoogle();
+
+                      if (success && mounted) {
+                        // Save session
+                        final user = authService.user;
+                        if (user != null) {
+                          await SessionManager.saveSession(
+                            userId: user.uid,
+                            email: user.email ?? '',
+                            userName: user.displayName,
+                          );
+                        }
+
+                        // Show success message
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Signed in successfully!'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+
+                        // Navigate to home
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => const HomeScreen()),
+                        );
+                      } else if (mounted && authService.errorMessage != null) {
+                        // Show error
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(authService.errorMessage!),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    },
+                    icon: Image.network(
+                      'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
+                      height: 24,
+                      width: 24,
+                      errorBuilder: (context, error, stackTrace) => const Icon(
+                        Icons.g_mobiledata,
+                        color: AppTheme.accentWhite,
+                      ),
+                    ),
+                    label: const Text(
+                      "Continue with Google",
+                      style: TextStyle(
+                        color: AppTheme.accentWhite,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppTheme.dividerColor),
+                      minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Text(

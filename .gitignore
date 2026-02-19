@@ -52,6 +52,34 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Android specific
+*.apk
+*.ap_
+*.aab
+/android/captures/
+/android/.gradle/
+/android/gradle/
+/android/gradlew
+/android/gradlew.bat
+
+# iOS specific
+*.ipa
+*.dSYM.zip
+*.dSYM
+/ios/Pods/
+/ios/.symlinks/
+/ios/Flutter/App.framework
+/ios/Flutter/Flutter.framework
+/ios/Flutter/Flutter.podspec
+/ios/ServiceDefinitions.json
+/ios/Runner/GeneratedPluginRegistrant.*
+
+# Web
+/web/flutter_service_worker.js
+/web/manifest.json
+/web/assets/AssetManifest.json
+/web/assets/FontManifest.json
+
 # Build directories
 build/
 .dart_tool/
@@ -78,12 +106,37 @@ firebase-debug.log
 firestore-debug.log
 firebase-debug.*.log
 
+# Note: firebase.json and firestore.rules are safe to commit (no secrets)
+
 # Local configuration files
 .env
 .env.local
 .env.*.local
 local.properties
 key.properties
+secrets.json
+secrets.yaml
+secrets/
+
+# Secure storage and session files
+*.keystore
+*.jks
+upload-keystore.jks
+session_cache/
+.flutter-secure-storage/
+
+# API Keys and credentials
+**/apikeys.dart
+**/api_keys.dart
+**/*_secrets.dart
+**/*_keys.dart
+credentials.json
+
+# Personal notes and development files
+TODO.md
+NOTES.md
+**/personal_*.md
+scratch_*.dart
 
 # Platform specific
 /android/.gradle
@@ -110,3 +163,45 @@ key.properties
 # Temporary test files
 temp_*
 test_*_screen.dart
+
+# Screenshots and recordings (add if you don't want to track them)
+screenshots/
+screen_recording/
+*.png
+*.jpg
+*.jpeg
+!assets/**/*.png
+!assets/**/*.jpg
+!assets/**/*.jpeg
+
+# Logs
+*.log
+logs/
+crashlytics/
+crash_reports/
+
+# Coverage reports
+coverage/
+test-results/
+lcov.info
+
+# VS Code workspace settings (uncomment if they contain sensitive data)
+# .vscode/settings.json
+# .vscode/launch.json
+
+# macOS
+.DS_Store
+*/.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Linux
+*~
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig

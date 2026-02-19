@@ -1,10 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
   User? _user;
   String? _errorMessage;
   bool _isLoading = false;
@@ -168,6 +170,78 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  // Sign in with Google
+  Future<bool> signInWithGoogle() async {
+    try {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      // Trigger the authentication flow
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      
+      if (googleUser == null) {
+        // User canceled the sign-in
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      // Obtain the auth details from the request
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      // Create a new credential
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      // Sign in to Firebase with the Google credential
+      await _auth.signInWithCredential(credential);
+      _user = _auth.currentUser;
+
+      // Ensure user document exists in Firestore
+      if (_user != null) {
+        try {
+          final userDoc = await _firestore.collection('users').doc(_user!.uid).get();
+          if (!userDoc.exists) {
+            // Create user document for new Google sign-in users
+            await _firestore.collection('users').doc(_user!.uid).set({
+              'email': _user!.email ?? '',
+              'displayName': _user!.displayName ?? googleUser.displayName ?? 'User',
+              'createdAt': FieldValue.serverTimestamp(),
+              'isAdmin': false,
+              'threadCount': 0,
+              'commentCount': 0,
+              'photoURL': _user!.photoURL,
+            });
+            print('✅ User document created for Google user ${_user!.uid}');
+          } else {
+            print('✅ User document already exists for ${_user!.uid}');
+          }
+        } catch (firestoreError) {
+          print('❌ Error checking/creating user document: $firestoreError');
+          // Continue even if Firestore fails - user is still authenticated
+        }
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } on FirebaseAuthException catch (e) {
+      _isLoading = false;
+      _handleAuthException(e);
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = 'Google sign-in failed: ${e.toString()}';
+      print('❌ Google sign-in error: $e');
+      notifyListeners();
+      return false;
+    }
+  }
+
   // Sign out
   Future<void> signOut() async {
     try {
@@ -175,8 +249,10 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
 
       await _auth.signOut();
+      await _googleSignIn.signOut();
       _user = null;
       _errorMessage = null;
+      _isAdmin = false;
 
       _isLoading = false;
       notifyListeners();
