@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../config/theme.dart';
 import '../../services/admin_service.dart';
+import '../../services/thread_service.dart';
 import 'all_users_screen.dart';
 import 'all_threads_screen.dart';
+import 'flagged_threads_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -13,8 +15,10 @@ class AdminDashboard extends StatefulWidget {
 
 class _AdminDashboardState extends State<AdminDashboard> {
   final AdminService _adminService = AdminService();
+  final ThreadService _threadService = ThreadService();
   Map<String, int> _stats = {};
   bool _isLoading = true;
+  int _flaggedCount = 0;
 
   @override
   void initState() {
@@ -25,6 +29,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Future<void> _loadStats() async {
     setState(() => _isLoading = true);
     final stats = await _adminService.getAppStats();
+    
+    // Get flagged threads count
+    _threadService.getPendingThreads().first.then((threads) {
+      if (mounted) {
+        setState(() {
+          _flaggedCount = threads.length;
+        });
+      }
+    });
+    
     if (mounted) {
       setState(() {
         _stats = stats;
@@ -137,10 +151,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: _buildStatCard(
-                            'Engagement',
-                            ((_stats['threads'] ?? 0) + (_stats['comments'] ?? 0)),
-                            Icons.trending_up,
-                            Colors.purple,
+                            'Flagged Posts',
+                            _flaggedCount,
+                            Icons.flag,
+                            _flaggedCount > 0 ? Colors.red : Colors.grey,
                           ),
                         ),
                       ],
@@ -155,6 +169,25 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         fontWeight: FontWeight.bold,
                         color: AppTheme.textPrimary,
                       ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildManagementCard(
+                      context,
+                      title: 'Flagged Posts',
+                      subtitle: 'Review posts pending moderation',
+                      icon: Icons.flag_outlined,
+                      color: Colors.orange,
+                      badge: _flaggedCount > 0 ? _flaggedCount : null,
+                      onTap: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const FlaggedThreadsScreen(),
+                          ),
+                        );
+                        // Reload stats when returning
+                        _loadStats();
+                      },
                     ),
                     const SizedBox(height: 12),
                     _buildManagementCard(
@@ -236,6 +269,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     required IconData icon,
     required Color color,
     required VoidCallback onTap,
+    int? badge,
   }) {
     return InkWell(
       onTap: onTap,
@@ -249,13 +283,38 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color, size: 28),
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: color, size: 28),
+                ),
+                if (badge != null && badge > 0)
+                  Positioned(
+                    right: -8,
+                    top: -8,
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        badge.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -292,3 +351,4 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 }
+

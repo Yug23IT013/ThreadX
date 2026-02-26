@@ -26,8 +26,9 @@ class AuthService extends ChangeNotifier {
         await checkIsAdmin();
       } else {
         _isAdmin = false;
+        notifyListeners();
       }
-      notifyListeners();
+      // checkIsAdmin() already calls notifyListeners()
     });
   }
 
@@ -41,18 +42,23 @@ class AuthService extends ChangeNotifier {
     try {
       if (_user == null) {
         _isAdmin = false;
+        notifyListeners();
         return;
       }
 
       final userDoc = await _firestore.collection('users').doc(_user!.uid).get();
       if (userDoc.exists) {
         _isAdmin = userDoc.data()?['isAdmin'] ?? false;
+        print('✅ Admin status checked: $_isAdmin for ${_user!.email}');
       } else {
         _isAdmin = false;
+        print('⚠️ User document not found for ${_user!.uid}');
       }
+      notifyListeners();
     } catch (e) {
       print('❌ Error checking admin status: $e');
       _isAdmin = false;
+      notifyListeners();
     }
   }
 
@@ -171,7 +177,8 @@ class AuthService extends ChangeNotifier {
   }
 
   // Sign in with Google
-  Future<bool> signInWithGoogle() async {
+  // Returns a Map with 'success' (bool) and 'isNewUser' (bool) keys
+  Future<Map<String, bool>> signInWithGoogle() async {
     try {
       _isLoading = true;
       _errorMessage = null;
@@ -184,7 +191,7 @@ class AuthService extends ChangeNotifier {
         // User canceled the sign-in
         _isLoading = false;
         notifyListeners();
-        return false;
+        return {'success': false, 'isNewUser': false};
       }
 
       // Obtain the auth details from the request
@@ -200,22 +207,26 @@ class AuthService extends ChangeNotifier {
       await _auth.signInWithCredential(credential);
       _user = _auth.currentUser;
 
+      bool isNewUser = false;
+
       // Ensure user document exists in Firestore
       if (_user != null) {
         try {
           final userDoc = await _firestore.collection('users').doc(_user!.uid).get();
           if (!userDoc.exists) {
-            // Create user document for new Google sign-in users
+            isNewUser = true;
+            // Create user document for new Google sign-in users with temporary displayName
+            // User will be prompted to set their username
             await _firestore.collection('users').doc(_user!.uid).set({
               'email': _user!.email ?? '',
-              'displayName': _user!.displayName ?? googleUser.displayName ?? 'User',
+              'displayName': '', // Empty initially - user needs to set username
               'createdAt': FieldValue.serverTimestamp(),
               'isAdmin': false,
               'threadCount': 0,
               'commentCount': 0,
               'photoURL': _user!.photoURL,
             });
-            print('✅ User document created for Google user ${_user!.uid}');
+            print('✅ User document created for new Google user ${_user!.uid}');
           } else {
             print('✅ User document already exists for ${_user!.uid}');
           }
@@ -227,18 +238,18 @@ class AuthService extends ChangeNotifier {
 
       _isLoading = false;
       notifyListeners();
-      return true;
+      return {'success': true, 'isNewUser': isNewUser};
     } on FirebaseAuthException catch (e) {
       _isLoading = false;
       _handleAuthException(e);
       notifyListeners();
-      return false;
+      return {'success': false, 'isNewUser': false};
     } catch (e) {
       _isLoading = false;
       _errorMessage = 'Google sign-in failed: ${e.toString()}';
       print('❌ Google sign-in error: $e');
       notifyListeners();
-      return false;
+      return {'success': false, 'isNewUser': false};
     }
   }
 

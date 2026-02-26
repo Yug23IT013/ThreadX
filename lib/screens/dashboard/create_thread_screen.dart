@@ -50,16 +50,34 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
         createdAt: DateTime.now(),
       );
 
-      await _threadService.createThread(thread);
+      final result = await _threadService.createThread(thread);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Thread created successfully!'),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        final isFlagged = result['isFlagged'] ?? false;
+        
+        if (isFlagged) {
+          // Show warning that post is under review
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                '⚠️ Your post contains potentially harmful content and is under review by moderators.',
+                style: TextStyle(fontSize: 13),
+              ),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+              duration: Duration(seconds: 5),
+            ),
+          );
+        } else {
+          // Post was approved automatically
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Thread created successfully!'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
         Navigator.pop(context, true);
       }
     } catch (e) {
@@ -81,6 +99,7 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: const Text("Create Post"),
         actions: [

@@ -1,5 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+enum ThreadStatus {
+  pending,   // Flagged, awaiting admin review
+  approved,  // Approved by admin or auto-approved (no flags)
+  rejected   // Rejected by admin
+}
+
 class ThreadModel {
   final String? id;
   final String title;
@@ -8,6 +14,9 @@ class ThreadModel {
   final DateTime createdAt;
   final int votes;
   final int commentCount;
+  final ThreadStatus status;
+  final String? flagReason;
+  final List<String>? flaggedKeywords;
 
   ThreadModel({
     this.id,
@@ -17,6 +26,9 @@ class ThreadModel {
     required this.createdAt,
     this.votes = 0,
     this.commentCount = 0,
+    this.status = ThreadStatus.approved,
+    this.flagReason,
+    this.flaggedKeywords,
   });
 
   // Convert ThreadModel to Map for Firestore
@@ -28,6 +40,9 @@ class ThreadModel {
       'createdAt': Timestamp.fromDate(createdAt),
       'votes': votes,
       'commentCount': commentCount,
+      'status': status.name,
+      'flagReason': flagReason,
+      'flaggedKeywords': flaggedKeywords,
     };
   }
 
@@ -42,7 +57,25 @@ class ThreadModel {
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       votes: data['votes'] ?? 0,
       commentCount: data['commentCount'] ?? 0,
+      status: _stringToStatus(data['status']),
+      flagReason: data['flagReason'],
+      flaggedKeywords: data['flaggedKeywords'] != null 
+          ? List<String>.from(data['flaggedKeywords']) 
+          : null,
     );
+  }
+
+  // Helper method to convert string to ThreadStatus
+  static ThreadStatus _stringToStatus(String? status) {
+    switch (status) {
+      case 'pending':
+        return ThreadStatus.pending;
+      case 'rejected':
+        return ThreadStatus.rejected;
+      case 'approved':
+      default:
+        return ThreadStatus.approved;
+    }
   }
 
   // Create ThreadModel from Map
@@ -55,6 +88,11 @@ class ThreadModel {
       createdAt: (map['createdAt'] as Timestamp).toDate(),
       votes: map['votes'] ?? 0,
       commentCount: map['commentCount'] ?? 0,
+      status: _stringToStatus(map['status']),
+      flagReason: map['flagReason'],
+      flaggedKeywords: map['flaggedKeywords'] != null 
+          ? List<String>.from(map['flaggedKeywords']) 
+          : null,
     );
   }
 
@@ -67,6 +105,9 @@ class ThreadModel {
     DateTime? createdAt,
     int? votes,
     int? commentCount,
+    ThreadStatus? status,
+    String? flagReason,
+    List<String>? flaggedKeywords,
   }) {
     return ThreadModel(
       id: id ?? this.id,
@@ -76,6 +117,9 @@ class ThreadModel {
       createdAt: createdAt ?? this.createdAt,
       votes: votes ?? this.votes,
       commentCount: commentCount ?? this.commentCount,
+      status: status ?? this.status,
+      flagReason: flagReason ?? this.flagReason,
+      flaggedKeywords: flaggedKeywords ?? this.flaggedKeywords,
     );
   }
 }

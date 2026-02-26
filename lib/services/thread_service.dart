@@ -1,26 +1,57 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/thread_model.dart';
+import 'content_moderation_service.dart';
 
 class ThreadService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _collectionName = 'threads';
 
-  // CREATE - Add new thread to Firestore
-  Future<String?> createThread(ThreadModel thread) async {
+  // CREATE - Add new thread to Firestore with content moderation
+  Future<Map<String, dynamic>> createThread(ThreadModel thread) async {
     try {
-      DocumentReference docRef = await _firestore.collection(_collectionName).add(thread.toMap());
-      return docRef.id;
+      // Check content for harmful keywords
+      final moderationResult = ContentModerationService.checkContent(
+        thread.title,
+        thread.content,
+      );
+
+      ThreadModel finalThread;
+      
+      if (moderationResult['isFlagged'] == true) {
+        // Content is flagged - set status to pending
+        final matchedKeywords = moderationResult['matchedKeywords'] as List<String>;
+        finalThread = thread.copyWith(
+          status: ThreadStatus.pending,
+          flagReason: 'Flagged for: ${ContentModerationService.getMatchedKeywordsString(matchedKeywords)}',
+          flaggedKeywords: matchedKeywords,
+        );
+      } else {
+        // Content is clean - auto-approve
+        finalThread = thread.copyWith(
+          status: ThreadStatus.approved,
+        );
+      }
+
+      DocumentReference docRef = await _firestore.collection(_collectionName).add(finalThread.toMap());
+      
+      return {
+        'success': true,
+        'threadId': docRef.id,
+        'isFlagged': moderationResult['isFlagged'],
+        'status': finalThread.status,
+      };
     } catch (e) {
       print('Error creating thread: $e');
       rethrow;
     }
   }
 
-  // READ - Get all threads (Stream for real-time updates)
+  // READ - Get all threads (Stream for real-time updates) - Only approved threads
   Stream<List<ThreadModel>> getAllThreads() {
     try {
       return _firestore
           .collection(_collectionName)
+          .where('status', isEqualTo: 'approved')
           .orderBy('createdAt', descending: true)
           .snapshots()
           .map((snapshot) {
@@ -61,6 +92,46 @@ class ThreadService {
       });
     } catch (e) {
       print('Error getting threads by author: $e');
+      rethrow;
+    }
+  }
+
+  // READ - Get all pending threads (for admin review)
+  Stream<List<ThreadModel>> getPendingThreads() {
+    try {
+      return _firestore
+          .collection(_collectionName)
+          .where('status', isEqualTo: 'pending')
+          .orderBy('createdAt', descending: true)
+          .snapshots()
+          .map((snapshot) {
+        return snapshot.docs.map((doc) => ThreadModel.fromFirestore(doc)).toList();
+      });
+    } catch (e) {
+      print('Error getting pending threads: $e');
+      rethrow;
+    }
+  }
+
+  // ADMIN - Approve a flagged thread
+  Future<void> approveThread(String threadId) async {
+    try {
+      await _firestore.collection(_collectionName).doc(threadId).update({
+        'status': 'approved',
+      });
+    } catch (e) {
+      print('Error approving thread: $e');
+      rethrow;
+    }
+  }
+
+  // ADMIN - Reject a flagged thread
+  Future<void> rejectThread(String threadId) async {
+    try {
+      // Delete rejected thread
+      await deleteThread(threadId);
+    } catch (e) {
+      print('Error rejecting thread: $e');
       rethrow;
     }
   }

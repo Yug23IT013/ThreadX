@@ -8,6 +8,7 @@ import '../../services/session_manager.dart';
 import '../../utils/validators.dart';
 import '../dashboard/home_screen.dart';
 import 'register_screen.dart';
+import 'username_setup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -120,6 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -217,24 +219,31 @@ class _LoginScreenState extends State<LoginScreen> {
                 OutlinedButton.icon(
                   onPressed: () async {
                     final authService = Provider.of<AuthService>(context, listen: false);
-                    final success = await authService.signInWithGoogle();
+                    final result = await authService.signInWithGoogle();
+                    final success = result['success'] ?? false;
+                    final isNewUser = result['isNewUser'] ?? false;
 
                     if (success && mounted) {
-                      // Save session
                       final user = authService.user;
-                      if (user != null) {
+                      if (user != null && isNewUser) {
+                        // New user - redirect to username setup
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => const UsernameSetupScreen()),
+                        );
+                      } else if (user != null) {
+                        // Existing user - save session and go to home
                         await SessionManager.saveSession(
                           userId: user.uid,
                           email: user.email ?? '',
                           userName: user.displayName,
                         );
-                      }
 
-                      // Navigate to home
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (context) => const HomeScreen()),
-                      );
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => const HomeScreen()),
+                        );
+                      }
                     } else if (mounted && authService.errorMessage != null) {
                       // Show error
                       ScaffoldMessenger.of(context).showSnackBar(

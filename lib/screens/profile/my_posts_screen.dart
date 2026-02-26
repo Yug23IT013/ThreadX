@@ -117,17 +117,78 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
           }
 
           final threads = snapshot.data!;
+          final pendingCount = threads.where((t) => t.status == ThreadStatus.pending).length;
+          final rejectedCount = threads.where((t) => t.status == ThreadStatus.rejected).length;
 
           return RefreshIndicator(
             onRefresh: () async {
               setState(() {});
             },
             child: ListView.separated(
-              itemCount: threads.length,
-              separatorBuilder: (context, index) =>
-                  const Divider(height: 1, color: AppTheme.dividerColor),
+              itemCount: threads.length + (pendingCount > 0 || rejectedCount > 0 ? 1 : 0),
+              separatorBuilder: (context, index) {
+                // Don't add divider after info banner
+                if (index == 0 && (pendingCount > 0 || rejectedCount > 0)) {
+                  return const SizedBox.shrink();
+                }
+                return const Divider(height: 1, color: AppTheme.dividerColor);
+              },
               itemBuilder: (context, index) {
-                final thread = threads[index];
+                // Show info banner if there are pending/rejected posts
+                if (index == 0 && (pendingCount > 0 || rejectedCount > 0)) {
+                  return Container(
+                    margin: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.info_outline, color: Colors.orange, size: 20),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (pendingCount > 0)
+                                Text(
+                                  '$pendingCount post${pendingCount > 1 ? 's are' : ' is'} pending admin approval',
+                                  style: const TextStyle(
+                                    color: AppTheme.textPrimary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              if (rejectedCount > 0)
+                                Text(
+                                  '$rejectedCount post${rejectedCount > 1 ? 's were' : ' was'} rejected by admin',
+                                  style: const TextStyle(
+                                    color: Colors.red,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              const SizedBox(height: 4),
+                              const Text(
+                                'Only approved posts appear in the main feed.',
+                                style: TextStyle(
+                                  color: AppTheme.textSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                // Adjust thread index if banner is shown
+                final threadIndex = (pendingCount > 0 || rejectedCount > 0) ? index - 1 : index;
+                final thread = threads[threadIndex];
                 return _buildThreadCard(context, thread);
               },
             ),
@@ -174,6 +235,42 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
                     fontSize: 12,
                   ),
                 ),
+                const SizedBox(width: 8),
+                // Status badge
+                if (thread.status == ThreadStatus.pending)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: Colors.orange, width: 1),
+                    ),
+                    child: const Text(
+                      'PENDING APPROVAL',
+                      style: TextStyle(
+                        color: Colors.orange,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  )
+                else if (thread.status == ThreadStatus.rejected)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: Colors.red, width: 1),
+                    ),
+                    child: const Text(
+                      'REJECTED',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.edit, size: 20),
