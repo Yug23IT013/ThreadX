@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../config/theme.dart';
 import '../../services/auth_service.dart';
 import '../../services/session_manager.dart';
+import '../../models/user_model.dart';
 import '../login/login_screen.dart';
 import 'settings_screen.dart';
 import 'my_posts_screen.dart';
@@ -103,32 +105,88 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  "Member since January 2026",
-                  style: TextStyle(
-                    color: AppTheme.textSecondary,
-                    fontSize: 14,
+                if (user != null)
+                  FutureBuilder<DocumentSnapshot>(
+                    future: FirebaseFirestore.instance.collection('users').doc(user.uid).get(),
+                    builder: (context, snapshot) {
+                      String memberSince = "Loading...";
+                      if (snapshot.hasData && snapshot.data!.exists) {
+                        final data = snapshot.data!.data() as Map<String, dynamic>;
+                        final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
+                        if (createdAt != null) {
+                          final monthYear = "${_getMonthName(createdAt.month)} ${createdAt.year}";
+                          memberSince = "Member since $monthYear";
+                        }
+                      }
+                      return Text(
+                        memberSince,
+                        style: const TextStyle(
+                          color: AppTheme.textSecondary,
+                          fontSize: 14,
+                        ),
+                      );
+                    },
+                  )
+                else
+                  const Text(
+                    "Member since ...",
+                    style: TextStyle(
+                      color: AppTheme.textSecondary,
+                      fontSize: 14,
+                    ),
                   ),
-                ),
                 const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildStatItem("1.2k", "Karma"),
-                    Container(
-                      width: 1,
-                      height: 30,
-                      color: AppTheme.dividerColor,
-                    ),
-                    _buildStatItem("45", "Posts"),
-                    Container(
-                      width: 1,
-                      height: 30,
-                      color: AppTheme.dividerColor,
-                    ),
-                    _buildStatItem("128", "Comments"),
-                  ],
-                ),
+                if (user != null)
+                  FutureBuilder<DocumentSnapshot>(
+                    future: FirebaseFirestore.instance.collection('users').doc(user.uid).get(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _buildStatItem("...", "Karma"),
+                            Container(width: 1, height: 30, color: AppTheme.dividerColor),
+                            _buildStatItem("...", "Posts"),
+                            Container(width: 1, height: 30, color: AppTheme.dividerColor),
+                            _buildStatItem("...", "Comments"),
+                          ],
+                        );
+                      }
+
+                      int karma = 0;
+                      int posts = 0;
+                      int comments = 0;
+
+                      if (snapshot.data!.exists) {
+                        final data = snapshot.data!.data() as Map<String, dynamic>;
+                        posts = data['threadCount'] ?? 0;
+                        comments = data['commentCount'] ?? 0;
+                        karma = (posts * 10) + (comments * 5); // Simple karma calculation
+                      }
+
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _buildStatItem(karma.toString(), "Karma"),
+                          Container(width: 1, height: 30, color: AppTheme.dividerColor),
+                          _buildStatItem(posts.toString(), "Posts"),
+                          Container(width: 1, height: 30, color: AppTheme.dividerColor),
+                          _buildStatItem(comments.toString(), "Comments"),
+                        ],
+                      );
+                    },
+                  )
+                else
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildStatItem("0", "Karma"),
+                      Container(width: 1, height: 30, color: AppTheme.dividerColor),
+                      _buildStatItem("0", "Posts"),
+                      Container(width: 1, height: 30, color: AppTheme.dividerColor),
+                      _buildStatItem("0", "Comments"),
+                    ],
+                  ),
               ],
             ),
           ),
@@ -236,5 +294,13 @@ class ProfileScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      '', 'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return months[month];
   }
 }

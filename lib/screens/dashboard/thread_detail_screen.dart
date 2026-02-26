@@ -6,6 +6,7 @@ import '../../models/comment_model.dart';
 import '../../services/comment_service.dart';
 import '../../services/thread_service.dart';
 import '../../services/vote_service.dart';
+import '../../services/admin_service.dart';
 
 class ThreadDetailScreen extends StatefulWidget {
   final String threadId;
@@ -25,6 +26,7 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
   final CommentService _commentService = CommentService();
   final ThreadService _threadService = ThreadService();
   final VoteService _voteService = VoteService();
+  final AdminService _adminService = AdminService();
   final TextEditingController _commentController = TextEditingController();
   final currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
@@ -109,29 +111,36 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          const CircleAvatar(
-                            radius: 16,
-                            backgroundColor: AppTheme.accentWhite,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            widget.thread.authorId,
-                            style: const TextStyle(
-                              color: AppTheme.textPrimary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            _getTimeAgo(widget.thread.createdAt),
-                            style: const TextStyle(
-                              color: AppTheme.textSecondary,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
+                      FutureBuilder<String>(
+                        future: _getUserDisplayName(widget.thread.authorId),
+                        builder: (context, snapshot) {
+                          final displayName = snapshot.data ?? 'Loading...';
+                          return Row(
+                            children: [
+                              const CircleAvatar(
+                                radius: 16,
+                                backgroundColor: AppTheme.accentWhite,
+                                child: Icon(Icons.person, size: 16, color: AppTheme.darkBackground),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                displayName,
+                                style: const TextStyle(
+                                  color: AppTheme.textPrimary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _getTimeAgo(widget.thread.createdAt),
+                                style: const TextStyle(
+                                  color: AppTheme.textSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -322,16 +331,22 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
               children: [
                 Row(
                   children: [
-                    Flexible(
-                      child: Text(
-                        comment.authorId,
-                        style: const TextStyle(
-                          color: AppTheme.textPrimary,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                    FutureBuilder<String>(
+                      future: _getUserDisplayName(comment.authorId),
+                      builder: (context, snapshot) {
+                        final displayName = snapshot.data ?? 'Loading...';
+                        return Flexible(
+                          child: Text(
+                            displayName,
+                            style: const TextStyle(
+                              color: AppTheme.textPrimary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -517,6 +532,15 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
           );
         }
       }
+    }
+  }
+
+  Future<String> _getUserDisplayName(String userId) async {
+    try {
+      final user = await _adminService.getUserById(userId);
+      return user?.displayName ?? 'Unknown User';
+    } catch (e) {
+      return 'Unknown User';
     }
   }
 
