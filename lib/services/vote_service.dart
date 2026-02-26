@@ -29,8 +29,24 @@ class VoteService {
       final voteDoc = _firestore.collection(_collectionName).doc(docId);
       final threadDoc = _firestore.collection('threads').doc(threadId);
 
+      // Get thread data to find author
+      final threadSnapshot = await threadDoc.get();
+      if (!threadSnapshot.exists) {
+        throw Exception('Thread not found');
+      }
+      final threadData = threadSnapshot.data() as Map<String, dynamic>;
+      final authorId = threadData['authorId'] as String;
+
       // Get current vote
       final currentVote = await getUserVote(threadId, userId);
+
+      // Don't let users vote on their own posts
+      if (authorId == userId) {
+        print('⚠️ Users cannot vote on their own posts');
+        return;
+      }
+
+      int karmaChange = 0;
 
       if (currentVote == voteType) {
         // Remove vote if clicking same button
@@ -38,12 +54,16 @@ class VoteService {
         await threadDoc.update({
           'votes': FieldValue.increment(voteType == 'upvote' ? -1 : 1),
         });
+        // Reverse karma change
+        karmaChange = voteType == 'upvote' ? -1 : 1;
       } else if (currentVote != null) {
         // Change vote
         await voteDoc.update({'voteType': voteType});
         await threadDoc.update({
           'votes': FieldValue.increment(voteType == 'upvote' ? 2 : -2),
         });
+        // Karma change from switching vote
+        karmaChange = voteType == 'upvote' ? 2 : -2;
       } else {
         // New vote
         await voteDoc.set({
@@ -55,6 +75,16 @@ class VoteService {
         await threadDoc.update({
           'votes': FieldValue.increment(voteType == 'upvote' ? 1 : -1),
         });
+        // New karma from new vote
+        karmaChange = voteType == 'upvote' ? 1 : -1;
+      }
+
+      // Update author's karma
+      if (karmaChange != 0) {
+        await _firestore.collection('users').doc(authorId).update({
+          'karma': FieldValue.increment(karmaChange),
+        });
+        print('✅ Updated karma for $authorId by $karmaChange');
       }
     } catch (e) {
       print('Error voting on thread: $e');

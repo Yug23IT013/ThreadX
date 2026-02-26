@@ -8,6 +8,7 @@ class UserModel {
   final bool isAdmin;
   final int threadCount;
   final int commentCount;
+  final int karma;
 
   UserModel({
     required this.id,
@@ -17,6 +18,7 @@ class UserModel {
     this.isAdmin = false,
     this.threadCount = 0,
     this.commentCount = 0,
+    this.karma = 0,
   });
 
   // Create from Firestore document
@@ -30,6 +32,7 @@ class UserModel {
       isAdmin: data['isAdmin'] ?? false,
       threadCount: data['threadCount'] ?? 0,
       commentCount: data['commentCount'] ?? 0,
+      karma: data['karma'] ?? 0,
     );
   }
 
@@ -41,6 +44,7 @@ class UserModel {
       'createdAt': Timestamp.fromDate(createdAt),
       'isAdmin': isAdmin,
       'threadCount': threadCount,
+      'karma': karma,
       'commentCount': commentCount,
     };
   }

@@ -94,6 +94,7 @@ class AuthService extends ChangeNotifier {
             'isAdmin': false, // New users are not admin by default
             'threadCount': 0,
             'commentCount': 0,
+            'karma': 0,
           });
           print('✅ User document created successfully for ${_user!.uid}');
         } catch (firestoreError) {
@@ -149,6 +150,7 @@ class AuthService extends ChangeNotifier {
               'isAdmin': false,
               'threadCount': 0,
               'commentCount': 0,
+              'karma': 0,
             });
             print('✅ User document created for existing user ${_user!.uid}');
           } else {
@@ -224,6 +226,7 @@ class AuthService extends ChangeNotifier {
               'isAdmin': false,
               'threadCount': 0,
               'commentCount': 0,
+              'karma': 0,
               'photoURL': _user!.photoURL,
             });
             print('✅ User document created for new Google user ${_user!.uid}');

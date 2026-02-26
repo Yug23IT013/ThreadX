@@ -161,7 +161,7 @@ class ProfileScreen extends StatelessWidget {
                         final data = snapshot.data!.data() as Map<String, dynamic>;
                         posts = data['threadCount'] ?? 0;
                         comments = data['commentCount'] ?? 0;
-                        karma = (posts * 10) + (comments * 5); // Simple karma calculation
+                        karma = data['karma'] ?? 0; // Use real karma from database
                       }
 
                       return Row(
