@@ -17,6 +17,7 @@ class ThreadModel {
   final ThreadStatus status;
   final String? flagReason;
   final List<String>? flaggedKeywords;
+  final String? imageUrl;
 
   ThreadModel({
     this.id,
@@ -29,6 +30,7 @@ class ThreadModel {
     this.status = ThreadStatus.approved,
     this.flagReason,
     this.flaggedKeywords,
+    this.imageUrl,
   });
 
   // Convert ThreadModel to Map for Firestore
@@ -43,6 +45,7 @@ class ThreadModel {
       'status': status.name,
       'flagReason': flagReason,
       'flaggedKeywords': flaggedKeywords,
+      'imageUrl': imageUrl,
     };
   }
 
@@ -62,6 +65,7 @@ class ThreadModel {
       flaggedKeywords: data['flaggedKeywords'] != null 
           ? List<String>.from(data['flaggedKeywords']) 
           : null,
+      imageUrl: data['imageUrl'],
     );
   }
 
@@ -108,6 +112,7 @@ class ThreadModel {
     ThreadStatus? status,
     String? flagReason,
     List<String>? flaggedKeywords,
+    String? imageUrl,
   }) {
     return ThreadModel(
       id: id ?? this.id,
@@ -120,6 +125,7 @@ class ThreadModel {
       status: status ?? this.status,
       flagReason: flagReason ?? this.flagReason,
       flaggedKeywords: flaggedKeywords ?? this.flaggedKeywords,
+      imageUrl: imageUrl ?? this.imageUrl,
     );
   }
 }

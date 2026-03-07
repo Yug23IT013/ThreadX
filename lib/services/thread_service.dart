@@ -32,7 +32,10 @@ class ThreadService {
         );
       }
 
-      DocumentReference docRef = await _firestore.collection(_collectionName).add(finalThread.toMap());
+      final threadData = finalThread.toMap();
+      print('💾 Saving thread to Firestore: $threadData');
+      
+      DocumentReference docRef = await _firestore.collection(_collectionName).add(threadData);
       
       return {
         'success': true,

@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:image_picker/image_picker.dart';
 import '../../config/theme.dart';
 import '../../services/thread_service.dart';
+import '../../services/image_upload_service.dart';
 import '../../models/thread_model.dart';
 
 class CreateThreadScreen extends StatefulWidget {
@@ -15,13 +20,92 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
   final ThreadService _threadService = ThreadService();
+  final ImageUploadService _imageUploadService = ImageUploadService();
   bool _isLoading = false;
+  XFile? _selectedImage;
+  String? _uploadedImageUrl;
 
   @override
   void dispose() {
     _titleController.dispose();
     _contentController.dispose();
     super.dispose();
+  }
+
+  Future<void> _showImagePickerDialog() async {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.cardBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Choose Image Source',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: AppTheme.accentWhite),
+              title: const Text('Gallery', style: TextStyle(color: AppTheme.textPrimary)),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(fromCamera: false);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: AppTheme.accentWhite),
+              title: const Text('Camera', style: TextStyle(color: AppTheme.textPrimary)),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(fromCamera: true);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage({required bool fromCamera}) async {
+    try {
+      XFile? image;
+      if (fromCamera) {
+        image = await _imageUploadService.pickImageFromCamera();
+      } else {
+        image = await _imageUploadService.pickImageFromGallery();
+      }
+
+      if (image != null) {
+        setState(() {
+          _selectedImage = image;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error picking image: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _removeImage() {
+    setState(() {
+      _selectedImage = null;
+      _uploadedImageUrl = null;
+    });
   }
 
   Future<void> _createThread() async {
@@ -43,11 +127,23 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
         throw Exception('User not logged in');
       }
 
+      // Upload image if selected
+      if (_selectedImage != null) {
+        _uploadedImageUrl = await _imageUploadService.uploadImage(
+          _selectedImage!,
+          'thread_images',
+        );
+        debugPrint('📸 Image uploaded! URL: $_uploadedImageUrl');
+      }
+
+      debugPrint('Creating thread with imageUrl: $_uploadedImageUrl');
+      
       final thread = ThreadModel(
         title: _titleController.text.trim(),
         content: _contentController.text.trim(),
         authorId: currentUser.uid,
         createdAt: DateTime.now(),
+        imageUrl: _uploadedImageUrl,
       );
 
       final result = await _threadService.createThread(thread);
@@ -189,6 +285,63 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
                 ),
               ),
               const SizedBox(height: 20),
+              // Image preview
+              if (_selectedImage != null)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.cardBackground, width: 2),
+                  ),
+                  child: Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: FutureBuilder<Uint8List>(
+                          future: _selectedImage!.readAsBytes(),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData) {
+                              return Image.memory(
+                                snapshot.data!,
+                                width: double.infinity,
+                                height: 200,
+                                fit: BoxFit.cover,
+                              );
+                            } else if (snapshot.hasError) {
+                              return Container(
+                                width: double.infinity,
+                                height: 200,
+                                color: AppTheme.cardBackground,
+                                child: const Icon(Icons.error, color: Colors.red),
+                              );
+                            } else {
+                              return Container(
+                                width: double.infinity,
+                                height: 200,
+                                color: AppTheme.cardBackground,
+                                child: const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: IconButton(
+                          onPressed: _removeImage,
+                          icon: const Icon(Icons.close),
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.black54,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -199,8 +352,8 @@ class _CreateThreadScreenState extends State<CreateThreadScreen> {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.image_outlined),
-                      onPressed: () {},
-                      color: AppTheme.textSecondary,
+                      onPressed: _showImagePickerDialog,
+                      color: AppTheme.accentWhite,
                     ),
                     IconButton(
                       icon: const Icon(Icons.link),

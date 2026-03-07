@@ -178,6 +178,46 @@ class ThreadCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
+                    // Thread image preview
+                    if (thread.imageUrl != null && thread.imageUrl!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          thread.imageUrl!,
+                          width: double.infinity,
+                          height: 150,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              height: 150,
+                              color: AppTheme.cardBackground,
+                              child: const Center(
+                                child: Icon(
+                                  Icons.broken_image,
+                                  color: AppTheme.textSecondary,
+                                ),
+                              ),
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              height: 150,
+                              color: AppTheme.cardBackground,
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  value: loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                      : null,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 12),
                     // Action buttons row
                     Row(

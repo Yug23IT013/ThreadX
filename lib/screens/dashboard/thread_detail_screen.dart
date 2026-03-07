@@ -162,6 +162,90 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
                           height: 1.5,
                         ),
                       ),
+                      // Display thread image if available
+                      if (widget.thread.imageUrl != null && widget.thread.imageUrl!.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: GestureDetector(
+                            onTap: () {
+                              // Show full image in dialog
+                              showDialog(
+                                context: context,
+                                builder: (context) => Dialog(
+                                  backgroundColor: Colors.transparent,
+                                  child: Stack(
+                                    children: [
+                                      Center(
+                                        child: InteractiveViewer(
+                                          child: Image.network(widget.thread.imageUrl!),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        top: 40,
+                                        right: 20,
+                                        child: IconButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          icon: const Icon(Icons.close),
+                                          style: IconButton.styleFrom(
+                                            backgroundColor: Colors.black54,
+                                            foregroundColor: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Image.network(
+                              widget.thread.imageUrl!,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  height: 200,
+                                  color: AppTheme.cardBackground,
+                                  child: const Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.broken_image,
+                                          color: AppTheme.textSecondary,
+                                          size: 48,
+                                        ),
+                                        SizedBox(height: 8),
+                                        Text(
+                                          'Failed to load image',
+                                          style: TextStyle(
+                                            color: AppTheme.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Container(
+                                  height: 250,
+                                  color: AppTheme.cardBackground,
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                      value: loadingProgress.expectedTotalBytes != null
+                                          ? loadingProgress.cumulativeBytesLoaded /
+                                              loadingProgress.expectedTotalBytes!
+                                          : null,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 16),
                       Row(
                         children: [
