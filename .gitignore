@@ -94,12 +94,13 @@ build/
 *.mocks.dart
 
 # Firebase sensitive files - DO NOT COMMIT TO PUBLIC REPOS
-# Note: For educational/private repos, you may want to include firebase_options.dart
-# Remove the line below if you want to track Firebase config
+# These files contain API keys and should never be committed to version control
 lib/firebase_options.dart
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 ios/firebase_app_id_file.json
+web/index.html
+web/firebase-messaging-sw.js
 .firebase/
 .firebaserc
 firebase-debug.log
@@ -107,6 +108,7 @@ firestore-debug.log
 firebase-debug.*.log
 
 # Note: firebase.json and firestore.rules are safe to commit (no secrets)
+# Template files (*.template) should be committed as examples
 
 # Local configuration files
 .env

@@ -21,7 +21,7 @@
   <meta name="description" content="A new Flutter project.">
 
   <!-- Google Sign-In Client ID -->
-  <meta name="google-signin-client_id" content="321019720682-24qch8v5k7eunqq4hc1abo22rpo8f7q5.apps.googleusercontent.com">
+  <meta name="google-signin-client_id" content="YOUR_GOOGLE_SIGNIN_CLIENT_ID">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -34,6 +34,29 @@
 
   <title>threadx_app</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Firebase SDK for Web -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js"></script>
+  
+  <script>
+    // Firebase configuration - REPLACE WITH YOUR ACTUAL CONFIG
+    // Get this from Firebase Console > Project Settings > Web App
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT_ID.firebasestorage.app",
+      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+      appId: "YOUR_APP_ID",
+      measurementId: "YOUR_MEASUREMENT_ID"
+    };
+
+    // Initialize Firebase for web
+    if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

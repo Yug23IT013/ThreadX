@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../config/theme.dart';
 import '../../services/auth_service.dart';
 import '../../services/session_manager.dart';
-import '../../models/user_model.dart';
 import '../login/login_screen.dart';
 import 'settings_screen.dart';
 import 'my_posts_screen.dart';

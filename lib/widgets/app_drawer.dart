@@ -13,6 +13,7 @@ import '../screens/profile/my_comments_screen.dart';
 import '../screens/login/login_screen.dart';
 import '../screens/demo/ui_components_demo.dart';
 import '../screens/demo/user_document_test_screen.dart';
+import '../screens/demo/notification_demo_screen.dart';
 import '../screens/admin/admin_dashboard.dart';
 
 /// Navigation Drawer Widget - Lab 7 Requirement
@@ -202,6 +203,22 @@ class _AppDrawerState extends State<AppDrawer> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => const UIComponentsDemo(),
+                      ),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  context,
+                  icon: Icons.notifications_outlined,
+                  title: 'Notification Demo',
+                  iconColor: AppTheme.accentBlue,
+                  textColor: AppTheme.accentBlue,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const NotificationDemoScreen(),
                       ),
                     );
                   },
