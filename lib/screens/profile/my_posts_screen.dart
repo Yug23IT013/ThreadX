@@ -425,10 +425,12 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
   }
 
   Future<void> _deleteThread(BuildContext context, ThreadModel thread) async {
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
     try {
       // Show loading indicator
       showDialog(
         context: context,
+        useRootNavigator: true,
         barrierDismissible: false,
         builder: (context) => const Center(
           child: CircularProgressIndicator(),
@@ -437,8 +439,11 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
 
       await _threadService.deleteThread(thread.id!);
 
+      if (rootNavigator.canPop()) {
+        rootNavigator.pop();
+      }
+
       if (mounted) {
-        Navigator.pop(context); // Close loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Post deleted successfully'),
@@ -449,8 +454,11 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
         setState(() {});
       }
     } catch (e) {
+      if (rootNavigator.canPop()) {
+        rootNavigator.pop();
+      }
+
       if (mounted) {
-        Navigator.pop(context); // Close loading dialog
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error deleting post: $e'),

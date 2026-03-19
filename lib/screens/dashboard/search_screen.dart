@@ -1,16 +1,38 @@
 import 'package:flutter/material.dart';
 import '../../config/theme.dart';
 import '../../models/thread_model.dart';
+import '../../services/thread_service.dart';
 import 'thread_detail_screen.dart';
 
-class SearchScreen extends StatelessWidget {
+class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
+
+  @override
+  State<SearchScreen> createState() => _SearchScreenState();
+}
+
+class _SearchScreenState extends State<SearchScreen> {
+  final ThreadService _threadService = ThreadService();
+  final TextEditingController _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const TextField(
+        title: TextField(
+          controller: _searchController,
+          onChanged: (value) {
+            setState(() {
+              _query = value.trim().toLowerCase();
+            });
+          },
           decoration: InputDecoration(
             hintText: "Search ThreadX",
             border: InputBorder.none,
@@ -20,73 +42,78 @@ class SearchScreen extends StatelessWidget {
           autofocus: true,
         ),
       ),
-      body: ListView(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Text(
-              "Popular Searches",
-              style: TextStyle(
-                color: AppTheme.textSecondary,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+      body: StreamBuilder<List<ThreadModel>>(
+        stream: _threadService.getAllThreads(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                'Error loading posts: ${snapshot.error}',
+                style: const TextStyle(color: AppTheme.textPrimary),
+                textAlign: TextAlign.center,
               ),
-            ),
-          ),
-          _buildSearchResult(
-            context: context,
-            title: "Flutter state management comparison",
-            subreddit: "r/FlutterDev",
-            votes: 342,
-          ),
-          const Divider(height: 1, color: AppTheme.dividerColor),
-          _buildSearchResult(
-            context: context,
-            title: "Best practices for clean architecture",
-            subreddit: "r/Programming",
-            votes: 578,
-          ),
-          const Divider(height: 1, color: AppTheme.dividerColor),
-          _buildSearchResult(
-            context: context,
-            title: "Async/await vs Futures in Dart",
-            subreddit: "r/FlutterDev",
-            votes: 215,
-          ),
-          const Divider(height: 1, color: AppTheme.dividerColor),
-          _buildSearchResult(
-            context: context,
-            title: "Material Design 3 implementation guide",
-            subreddit: "r/MaterialDesign",
-            votes: 489,
-          ),
-        ],
+            );
+          }
+
+          final allThreads = snapshot.data ?? [];
+          final filteredThreads = _query.isEmpty
+              ? allThreads
+              : allThreads.where((thread) {
+                  final title = thread.title.toLowerCase();
+                  final content = thread.content.toLowerCase();
+                  return title.contains(_query) || content.contains(_query);
+                }).toList();
+
+          if (_query.isEmpty) {
+            return const Center(
+              child: Text(
+                'Type in the search bar to find posts',
+                style: TextStyle(color: AppTheme.textSecondary),
+              ),
+            );
+          }
+
+          if (filteredThreads.isEmpty) {
+            return const Center(
+              child: Text(
+                'No matching posts found',
+                style: TextStyle(color: AppTheme.textSecondary),
+              ),
+            );
+          }
+
+          return ListView.separated(
+            itemCount: filteredThreads.length,
+            separatorBuilder: (context, index) => const Divider(height: 1, color: AppTheme.dividerColor),
+            itemBuilder: (context, index) {
+              final thread = filteredThreads[index];
+              return _buildSearchResult(
+                context: context,
+                thread: thread,
+              );
+            },
+          );
+        },
       ),
     );
   }
 
   Widget _buildSearchResult({
     required BuildContext context,
-    required String title,
-    required String subreddit,
-    required int votes,
+    required ThreadModel thread,
   }) {
     return InkWell(
       onTap: () {
-        // Create a mock thread for search results
-        final mockThread = ThreadModel(
-          title: title,
-          content: '',
-          authorId: 'search_user',
-          createdAt: DateTime.now().subtract(const Duration(days: 1)),
-          votes: votes,
-        );
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => ThreadDetailScreen(
-              threadId: 'search_result',
-              thread: mockThread,
+              threadId: thread.id!,
+              thread: thread,
             ),
           ),
         );
@@ -107,7 +134,7 @@ class SearchScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
+                    thread.title,
                     style: const TextStyle(
                       color: AppTheme.textPrimary,
                       fontSize: 15,
@@ -118,7 +145,7 @@ class SearchScreen extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        subreddit,
+                        thread.authorId,
                         style: const TextStyle(
                           color: AppTheme.textSecondary,
                           fontSize: 12,
@@ -126,7 +153,7 @@ class SearchScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        "$votes upvotes",
+                        '${thread.votes} upvotes',
                         style: const TextStyle(
                           color: AppTheme.textSecondary,
                           fontSize: 12,

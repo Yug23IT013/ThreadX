@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/thread_model.dart';
 import '../config/theme.dart';
 import '../services/vote_service.dart';
+import '../services/admin_service.dart';
 
 /// Reusable Thread Card Widget for displaying thread information
 /// Demonstrates Card layout implementation for Lab 7
@@ -24,6 +25,7 @@ class ThreadCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final VoteService voteService = VoteService();
+    final AdminService adminService = AdminService();
     final bool isAuthor = currentUserId == thread.authorId;
     final String timeAgo = _getTimeAgo(thread.createdAt);
 
@@ -115,13 +117,24 @@ class ThreadCard extends StatelessWidget {
                         ),
                         const SizedBox(width: 6),
                         Expanded(
-                          child: Text(
-                            thread.authorId,
-                            style: const TextStyle(
-                              color: AppTheme.textSecondary,
-                              fontSize: 12,
-                            ),
-                            overflow: TextOverflow.ellipsis,
+                          child: FutureBuilder(
+                            future: adminService.getUserById(thread.authorId),
+                            builder: (context, snapshot) {
+                              final displayName = snapshot.data?.displayName;
+                              final fallbackId = thread.authorId.length > 8
+                                  ? '${thread.authorId.substring(0, 8)}...'
+                                  : thread.authorId;
+                              return Text(
+                                (displayName != null && displayName.trim().isNotEmpty)
+                                    ? displayName
+                                    : fallbackId,
+                                style: const TextStyle(
+                                  color: AppTheme.textSecondary,
+                                  fontSize: 12,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              );
+                            },
                           ),
                         ),
                         const SizedBox(width: 8),

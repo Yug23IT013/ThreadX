@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
 import '../../config/theme.dart';
 import '../../models/thread_model.dart';
 import '../../models/comment_model.dart';
@@ -7,6 +8,7 @@ import '../../services/comment_service.dart';
 import '../../services/thread_service.dart';
 import '../../services/vote_service.dart';
 import '../../services/admin_service.dart';
+import 'edit_thread_screen.dart';
 
 class ThreadDetailScreen extends StatefulWidget {
   final String threadId;
@@ -91,12 +93,13 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.share_outlined),
-            onPressed: () {},
+            onPressed: _shareThread,
           ),
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () {},
-          ),
+          if (currentUserId == widget.thread.authorId)
+            IconButton(
+              icon: const Icon(Icons.more_vert),
+              onPressed: _showThreadOptions,
+            ),
         ],
       ),
       body: Column(
@@ -393,6 +396,116 @@ class _ThreadDetailScreenState extends State<ThreadDetailScreen> {
         ],
       ),
     );
+  }
+
+  void _showThreadOptions() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.cardBackground,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit, color: AppTheme.accentBlue),
+              title: const Text('Edit Thread', style: TextStyle(color: AppTheme.textPrimary)),
+              onTap: () async {
+                Navigator.pop(context);
+                await _editThread();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text('Delete Thread', style: TextStyle(color: Colors.red)),
+              onTap: () {
+                Navigator.pop(context);
+                _confirmDeleteThread();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _editThread() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditThreadScreen(thread: widget.thread),
+      ),
+    );
+
+    if (result == true && mounted) {
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Thread updated successfully')),
+      );
+    }
+  }
+
+  Future<void> _confirmDeleteThread() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.cardBackground,
+        title: const Text('Delete Thread', style: TextStyle(color: AppTheme.textPrimary)),
+        content: const Text(
+          'Are you sure you want to delete this thread? This action cannot be undone.',
+          style: TextStyle(color: AppTheme.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await _threadService.deleteThread(widget.threadId);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Thread deleted successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error deleting thread: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _shareThread() async {
+    final content = widget.thread.content.trim();
+    final textToShare = content.isEmpty
+        ? widget.thread.title
+        : '${widget.thread.title}\n\n$content';
+
+    await Clipboard.setData(ClipboardData(text: textToShare));
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Thread copied. You can now paste and share it.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   Widget _buildComment(CommentModel comment) {
