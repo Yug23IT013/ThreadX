@@ -4,7 +4,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
-import 'web_notification_helper.dart';
+import 'stub_notification_helper.dart';
 
 /// Background message handler - must be top-level function
 @pragma('vm:entry-point')

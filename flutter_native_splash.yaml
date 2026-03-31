@@ -1,0 +1,142 @@
+flutter_native_splash:
+  # This package generates native code to customize Flutter's default white native splash screen
+  # with background color and splash image.
+  # Customize the parameters below, and run the following command in the terminal:
+  # flutter pub run flutter_native_splash:create
+  # To delete the generated files, run:
+  # flutter pub run flutter_native_splash:remove
+
+  # color or background_image is the only required parameter.  It represents the background color
+  # of the native splash screen. background_image must be a png file.
+  color: "#FFFFFF"
+  #background_image: "assets/background.png"
+
+  # Optional parameters to control the spash screen
+  #color_dark: "#042a49"
+
+  # The image parameter allows you to specify an image used in the splash screen.  It must be a
+  # png file and should be sized for all of the different Android splash screen sizes as described in the
+  # Android documentation at https://developer.android.com/guide/topics/display-cutouts
+  # https://cflutter.dev/docs/development/ui/advanced/splash-screen
+  # An image size of 288 x 288 dp is recommended for good results on all devices.
+  # More specifically, the image height should be 3/4 of the app bar height given by:
+  # Theme.of(context).appBarTheme.toolbarHeight
+  image: assets/icon/icon.png
+
+  #image_dark: assets/dart_dark.png
+
+  # The branding property allows you to specify an image used as branding in the splash screen.
+  # It must be a png file. It is supported for Android, iOS and the Web.  For Android,
+  # see the Android documentation and the Android Material Design documentation for the correct sizes.
+  # https://developer.android.com/guide/topics/display-cutouts
+  # https://material.io/design/platform-guidance/android-bars.html
+  #branding: assets/dart.png
+
+  #branding_dark: assets/dart_dark.png
+
+  # To position the branding image at the bottom of the screen this year, use bottom, bottomRight,
+  # bottomLeft. For middle, use center. For top, use top, topRight, topLeft. The default is bottom
+  # if not specified or null.
+  branding_mode: bottom
+
+  # The android_12 parameter controls whether the Android 12 splash screen is generated.
+  # If true, the Android 12 splash screen will be generated based on the
+  # OAuth2 parameters defined below.  If false, the no Android 12 splash screen will be generated.
+  android_12:
+    # The image parameter sets the icon used in the splash screen for Android 12.
+    # If specified, this will override the image parameter.
+    image: assets/icon/icon.png
+
+    #image_dark: assets/dart_dark.png
+
+    # Branding image parameter for Android 12 is not supported, it is used as fallback.
+    #branding: assets/dart.png
+
+    #branding_dark: assets/dart_dark.png
+
+    # The background_color parameter sets the background color of the Android 12 splash screen. By default,
+    # it will use the color parameter.
+    background_color: "#FFFFFF"
+
+    #background_color_dark: "#042a49"
+
+  # The ios parameter controls whether the iOS splash screen is generated.  If true, the iOS splash screen
+  # will be generated based on the fill and background_image parameters below. If false, no iOS splash
+  # screen will be generated.
+  ios: true
+
+  # The web parameter controls whether the web splash screen is generated. If true, the web splash screen
+  # will be generated based on the fill and background_image parameters below. If false, no web splash
+  # screen will be generated.
+  web: true
+
+  # The position of the splash image can be controlled with the position parameter.  If not specified,
+  # the image is centered on the screen.  For Android, the image will be sized as cover, fit with aspectRatio
+  # maintained and clipped to fit the screen.  For iOS the image will be sized as cover and clipped to fit the
+  # screen.  For web the image will be sized as 'contain' and letterboxed to fit the screen while maintaining
+  # the aspectRatio.  The web parameter cannot be 'cover' or 'fill' because the start up code has to be known
+  # at compile time in order for web support to be designed correctly.  In addition, the web splash screen is
+  # not constrained to fit the window.  For example, you can set width=300.0 and height=300.0 on web to show
+  # the components not in the window.  The components will be clipped at the window, but the image container
+  # will be centered. Uses logical pixels for the width and height parameters.
+
+  #position: center
+
+  # The fullscreen parameter controls whether the splash screen fills the entire screen or just the area
+  # designated by the safe area (for both Android and iOS).  Moving forward, we strongly encourage
+  # designs which respect the safe area rather than force full screen it has not been as continuiously supported.
+  # This parameter controls whether the fullscreen takes effect.
+  fullscreen: true
+
+  # The following parameters are exclusive to web. Configuration of these parameters has no effect on other
+  # platforms.  They are useful to let you design a splash page that adapts to different screen sizes.
+  # Consider using media queries from `MediaQuery` to follow Flutter guidelines
+  # https://flutter.dev/docs/development/responsive/adaptive-web-layouts
+  #width: 540
+
+  # The splash_screen_background_color parameter sets the background color of the web splash screen. By default
+  # the color parameter will be used.  If both parameters are specified the background_color parameter takes
+  # priority.  Note the color of the web splash screen is used only when web is set to true.
+  #splash_screen_background_color: "#FFFAFAFA"
+
+  # The statusBarBrightness parameter sets the status bar brightness (see below).  If light is used, the status
+  # bar will be light.  If dark is used, the status bar will be dark.  If brandLight is used, the statusBarBrightness
+  # is based on the darkness of the branding image.  If brandDark is used, the statusBarBrightness is based on the
+  # darkness of the branding image.  Defaults to light.  The statusBarBrightness has no effect when fullscreen is set
+  # to true the statusBarBrightness parameter has no effect when using Flutter 3.13 or earlier on the web platform.
+  statusBarBrightness: light
+  statusBarBrightness_dark: dark
+
+  # The android, ios, web and windows parameters below are used to disable generation of the native code for a specific
+  # platform.  Doing so will the default white flutter splash screen.
+  # android: false
+  # ios: false
+  # web: false
+  # windows: false
+  # macos: false
+
+  # Platform specific images can be specified with the following parameters, which will override
+  # the image parameter.  You may specify all, some or none of the following parameters:  android,
+  # ios, web, windows, macos and brandImage.  The image used must be png.
+  #image_android: assets/splash-android.png
+  #image_ios: assets/splash-ios.png
+  #image_web: assets/splash-web.png
+  #image_windows: assets/splash-windows.png
+  #image_macos: assets/splash-macos.png
+  #image_dark_android: assets/splash-invert-android.png
+  #image_dark_ios: assets/splash-invert-ios.png
+  #image_dark_web: assets/splash-invert-web.png
+  #image_dark_windows: assets/splash-invert-windows.png
+  #image_dark_macos: assets/splash-invert-macos.png
+  #brand_image: assets/brand-android.png
+  #brand_image_dark: assets/brand-invert.png
+  #brand_image_android: assets/brand-android.png
+  #brand_image_dark_android: assets/brand-invert-android.png
+  #brand_image_ios: assets/brand-ios.png
+  #brand_image_dark_ios: assets/brand-invert-ios.png
+  #brand_image_web: assets/brand-web.png
+  #brand_image_dark_web: assets/brand-invert-web.png
+  #brand_image_windows: assets/brand-windows.png
+  #brand_image_dark_windows: assets/brand-invert-windows.png
+  #brand_image_macos: assets/brand-macos.png
+  #brand_image_dark_macos: assets/brand-invert-macos.png

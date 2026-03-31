@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../../services/notification_service.dart';
-import '../../services/web_notification_helper.dart';
+import '../../services/stub_notification_helper.dart';
 
 class NotificationDemoScreen extends StatefulWidget {
   const NotificationDemoScreen({super.key});
